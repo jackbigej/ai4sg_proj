@@ -2,6 +2,7 @@
 
 import sys
 import csv
+import os
 
 def parse_schedule():
     with open('FallClassSchedule.csv', 'r') as f:
@@ -107,11 +108,24 @@ def parse_schedule():
 
 
 def parse_occupancy():
-    pass
+    occ = {'room': {'date': {}, 'time': {}, 'occupied': {}}}
+
+    for filename in os.listdir("occupancy_csv"):
+        with open(os.path.join("occupancy_csv", filename), 'r') as f:
+            csvreader = csv.reader(f)
+            header = []
+            header = next(csvreader)
+            
+            for row in csvreader:
+                occ['room']['date'] = row[0].split(' ')[0]
+                occ['room']['time'] = row[0].split(' ')[1]
+                occ['room']['occupied'] = row[1]
+            print(occ)
 
 
 def main():
     parse_schedule()
+    parse_occupancy()
 
 if __name__ == '__main__':
     main()
