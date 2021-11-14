@@ -1,5 +1,6 @@
 #!/usr/bin/bash python3
 
+import datetime
 import sys
 import csv
 import os
@@ -51,8 +52,6 @@ def parse_schedule():
                         start_end['start']['hour'] = hour
                         start_end['start']['min'] = minute
 
-                        #print(hour, minute, tp[0].split(' ')[1])
-
                     else:
                         time = tp[0].split(' ')[0]
                         time = time.split(':')
@@ -62,8 +61,6 @@ def parse_schedule():
                         minute = int(time[1])
                         start_end['start']['hour'] = hour
                         start_end['start']['min'] = minute
-                        #print(hour, minute, tp[0].split(' ')[1])
-
 
                     # End Time
 
@@ -78,7 +75,6 @@ def parse_schedule():
                             hour = hour + 12
                         start_end['end']['hour'] = hour
                         start_end['end']['min'] = minute
-                        #print(hour, minute, tp[0].split(' ')[1])
 
                     else:
                         time = tp[1].split(' ')[0]
@@ -89,9 +85,6 @@ def parse_schedule():
                         minute = int(time[1])
                         start_end['end']['hour'] = hour
                         start_end['end']['min'] = minute
-                        #print(hour, minute, tp[0].split(' ')[1])
-
-                    
                     
                     index_start = int((12*start_end['start']['hour']) + int((start_end['start']['min']/5)))
                     index_end = int((12*start_end['end']['hour']) + int((start_end['end']['min']/5)))
@@ -101,10 +94,6 @@ def parse_schedule():
                         print('Start:', index_start, 'End:', index_end)
                     for i in range(index_start, index_end + 1):
                         translated[room][day][i] = 1
-                    #print(len(translated[room][day]))
-
-        print(pd['B011']['F'])
-        print(translated)
 
 
 def parse_occupancy():
@@ -116,19 +105,65 @@ def parse_occupancy():
             header = []
             header = next(csvreader)
             if filename not in occ:
-                occ['room'] = filename
+                occ[filename] = {}
             
-            occ['room'] = []
             for row in csvreader:
                 row_data = {}
                 date = row[0].split(' ')[0]
+                new_date = date.split('/')
+                weekday = datetime.date(int(new_date[2]), int(new_date[0]), int(new_date[1])).weekday()
+                if weekday == 0:
+                    day = 'M'
+                elif weekday == 1:
+                    day = 'T'
+                elif weekday == 2:
+                    day = 'W'
+                elif weekday == 3:
+                    day = 'R'
+                elif weekday == 4:
+                    day = 'F'
+                else:
+                    continue
+                
                 row_data['date'] = date
                 time = row[0].split(' ')[1]
                 row_data['time'] = time
                 occupied = row[1]
                 row_data['occupied'] = occupied
-                occ['room'].append(row_data)
-            print(list(occ.items())[0])
+                if day not in occ[filename]:
+                    occ[filename][day] = []
+                
+                occ[filename][day].append(row_data)
+                               
+    translated = {}
+
+    for room in occ.keys():
+        if room not in translated:
+            translated[room] = {}
+        for day in occ[room].keys():
+            if day not in translated[room]:
+                translated[room][day] = {}
+            for date_dict in occ[room][day]:
+                if date_dict['date'] not in translated[room][day]:
+                    translated[room][day][date_dict['date']] = [0 for i in range(288)]
+                    
+                # Occupancy at 00:00 will be the same for 00:05, 00:10
+                time = date_dict['time']
+                time = time.split(':')
+                hour = int(time[0])
+                minute = int(time[1])
+                index_start = int((12*hour) + int(minute)/5)
+                occupied = date_dict['occupied']
+                if occupied == '':
+                    occupied = 0
+                translated[room][day][date_dict['date']][index_start] = int(occupied)
+                translated[room][day][date_dict['date']][index_start + 1] = int(occupied)
+                translated[room][day][date_dict['date']][index_start + 2] = int(occupied)
+        
+
+    print('printing translated')
+    print(translated)
+    #print(translated['VAV_1027A.csv']['R']['10/21/2021'])        
 
 def main():
     parse_schedule()
