@@ -108,20 +108,27 @@ def parse_schedule():
 
 
 def parse_occupancy():
-    occ = {'room': {'date': {}, 'time': {}, 'occupied': {}}}
+    occ = {}
 
     for filename in os.listdir("occupancy_csv"):
         with open(os.path.join("occupancy_csv", filename), 'r') as f:
             csvreader = csv.reader(f)
             header = []
             header = next(csvreader)
+            if filename not in occ:
+                occ['room'] = filename
             
+            occ['room'] = []
             for row in csvreader:
-                occ['room']['date'] = row[0].split(' ')[0]
-                occ['room']['time'] = row[0].split(' ')[1]
-                occ['room']['occupied'] = row[1]
-            print(occ)
-
+                row_data = {}
+                date = row[0].split(' ')[0]
+                row_data['date'] = date
+                time = row[0].split(' ')[1]
+                row_data['time'] = time
+                occupied = row[1]
+                row_data['occupied'] = occupied
+                occ['room'].append(row_data)
+            print(list(occ.items())[0])
 
 def main():
     parse_schedule()
