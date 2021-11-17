@@ -43,8 +43,6 @@ def parse_schedule():
                     if tp[0].split(' ')[1] == 'PM':
                         time = tp[0].split(' ')[0]
                         time = time.split(':')
-                        if room == 'B011' and day == 'F':
-                            print(time)
                         hour = int(time[0])
                         minute = int(time[1])
                         if hour != 12:
@@ -55,8 +53,6 @@ def parse_schedule():
                     else:
                         time = tp[0].split(' ')[0]
                         time = time.split(':')
-                        if room == 'B011' and day == 'F':
-                            print(time)
                         hour = int(time[0])
                         minute = int(time[1])
                         start_end['start']['hour'] = hour
@@ -67,8 +63,6 @@ def parse_schedule():
                     if tp[1].split(' ')[1] == 'PM':
                         time = tp[1].split(' ')[0]
                         time = time.split(':')
-                        if room == 'B011' and day == 'F':
-                            print(time)
                         hour = int(time[0])
                         minute = int(time[1])
                         if hour != 12:
@@ -79,8 +73,6 @@ def parse_schedule():
                     else:
                         time = tp[1].split(' ')[0]
                         time = time.split(':')
-                        if room == 'B011' and day == 'F':
-                            print(time)
                         hour = int(time[0])
                         minute = int(time[1])
                         start_end['end']['hour'] = hour
@@ -89,51 +81,61 @@ def parse_schedule():
                     index_start = int((12*start_end['start']['hour']) + int((start_end['start']['min']/5)))
                     index_end = int((12*start_end['end']['hour']) + int((start_end['end']['min']/5)))
 
-                    if room == 'B011' and day == 'F':
-                        print(start_end)
-                        print('Start:', index_start, 'End:', index_end)
                     for i in range(index_start, index_end + 1):
                         translated[room][day][i] = 1
+    return translated
 
 
 def parse_occupancy():
     occ = {}
+    lights = {}
+
+    with open("LightRoomKey.csv") as f:
+        csvreader = csv.reader(f)
+        for row in csvreader:
+            lights[row[0]] = row[1]
 
     for filename in os.listdir("occupancy_csv"):
-        with open(os.path.join("occupancy_csv", filename), 'r') as f:
-            csvreader = csv.reader(f)
-            header = []
-            header = next(csvreader)
-            if filename not in occ:
-                occ[filename] = {}
-            
-            for row in csvreader:
-                row_data = {}
-                date = row[0].split(' ')[0]
-                new_date = date.split('/')
-                weekday = datetime.date(int(new_date[2]), int(new_date[0]), int(new_date[1])).weekday()
-                if weekday == 0:
-                    day = 'M'
-                elif weekday == 1:
-                    day = 'T'
-                elif weekday == 2:
-                    day = 'W'
-                elif weekday == 3:
-                    day = 'R'
-                elif weekday == 4:
-                    day = 'F'
-                else:
-                    continue
+        filename = filename.split(".")[0]
+        if filename in lights:
+            with open(os.path.join("occupancy_csv", filename + ".csv"), 'r') as f:
+                csvreader = csv.reader(f)
+                header = []
+                header = next(csvreader)
+                if filename not in occ:
+                    occ[lights[filename]] = {}
                 
-                row_data['date'] = date
-                time = row[0].split(' ')[1]
-                row_data['time'] = time
-                occupied = row[1]
-                row_data['occupied'] = occupied
-                if day not in occ[filename]:
-                    occ[filename][day] = []
-                
-                occ[filename][day].append(row_data)
+                for row in csvreader:
+                    row_data = {}
+                    date = row[0].split(' ')[0]
+                    new_date = date.split('/')
+                    start_date = datetime.date(2021, 8, 23)
+                    current_date = datetime.date(int(new_date[2]), int(new_date[0]), int(new_date[1]))
+                    weekday = current_date.weekday()
+                    if current_date < start_date:
+                        continue
+                    if weekday == 0:
+                        day = 'M'
+                    elif weekday == 1:
+                        day = 'T'
+                    elif weekday == 2:
+                        day = 'W'
+                    elif weekday == 3:
+                        day = 'R'
+                    elif weekday == 4:
+                        day = 'F'
+                    else:
+                        continue
+                    
+                    row_data['date'] = date
+                    time = row[0].split(' ')[1]
+                    row_data['time'] = time
+                    occupied = row[1]
+                    row_data['occupied'] = occupied
+                    if day not in occ[lights[filename]]:
+                        occ[lights[filename]][day] = []
+                    
+                    occ[lights[filename]][day].append(row_data)
                                
     translated = {}
 
@@ -161,13 +163,41 @@ def parse_occupancy():
                 translated[room][day][date_dict['date']][index_start + 2] = int(occupied)
         
 
-    print('printing translated')
-    print(translated)
-    #print(translated['VAV_1027A.csv']['R']['10/21/2021'])        
+    #print(translated)
+    return translated
+    #print(translated['VAV_1027A.csv']['R']['10/21/2021']) 
+
+def compare(schedule, occ):
+    compared = {}
+
+    with open("LightRoomKey.csv") as f:
+        csvreader = csv.reader(f)
+        for row in csvreader:
+            room = row[1]
+            if room == "205":
+                continue
+            if room not in compared:
+                compared[room] = {}
+            for weekday in schedule[room].keys():
+                if weekday not in compared[room]:
+                    compared[room][weekday] = {}
+                for date in occ[room][weekday].keys():
+                    print(room)
+                    print(weekday)
+                    print(date)
+                    if date not in compared[room][weekday]:
+                        compared[room][weekday][date] = [0 for i in range(288)]
+                    for i in range(288):
+                        if schedule[room][weekday][i] == 0 and occ[room][weekday][date][i] == 1:
+                            compared[room][weekday][date][i] = 1
+
+    #print(compared)
+
 
 def main():
-    parse_schedule()
-    parse_occupancy()
+    schedule = parse_schedule()
+    occ = parse_occupancy()
+    compare(schedule, occ)
 
 if __name__ == '__main__':
     main()
