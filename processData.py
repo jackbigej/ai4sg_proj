@@ -163,9 +163,7 @@ def parse_occupancy():
                 translated[room][day][date_dict['date']][index_start + 2] = int(occupied)
         
 
-    #print(translated)
     return translated
-    #print(translated['VAV_1027A.csv']['R']['10/21/2021']) 
 
 def compare(schedule, occ):
     compared = {}
@@ -174,25 +172,22 @@ def compare(schedule, occ):
         csvreader = csv.reader(f)
         for row in csvreader:
             room = row[1]
-            if room == "205":
+            if room == "205" or room == "214": # 205 has too little data, 214 is empty file, 346 and 349 have no classes
                 continue
             if room not in compared:
                 compared[room] = {}
             for weekday in schedule[room].keys():
                 if weekday not in compared[room]:
                     compared[room][weekday] = {}
-                for date in occ[room][weekday].keys():
-                    print(room)
-                    print(weekday)
-                    print(date)
-                    if date not in compared[room][weekday]:
-                        compared[room][weekday][date] = [0 for i in range(288)]
-                    for i in range(288):
-                        if schedule[room][weekday][i] == 0 and occ[room][weekday][date][i] == 1:
-                            compared[room][weekday][date][i] = 1
+                if weekday != "U": # room 143 has a class on Sunday's, should we try and incorporate Sunday's or ignore this instance?
+                    for date in occ[room][weekday].keys():
+                        if date not in compared[room][weekday]:
+                            compared[room][weekday][date] = [0 for i in range(288)]
+                        for i in range(288):
+                            if schedule[room][weekday][i] == 0 and occ[room][weekday][date][i] == 1:
+                                compared[room][weekday][date][i] = 1
 
-    #print(compared)
-
+    print(compared)
 
 def main():
     schedule = parse_schedule()
