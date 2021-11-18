@@ -162,32 +162,39 @@ def parse_occupancy():
                 translated[room][day][date_dict['date']][index_start + 1] = int(occupied)
                 translated[room][day][date_dict['date']][index_start + 2] = int(occupied)
         
-
     return translated
 
 def compare(schedule, occ):
     compared = {}
+    averages = {}
 
     with open("LightRoomKey.csv") as f:
         csvreader = csv.reader(f)
         for row in csvreader:
             room = row[1]
-            if room == "205" or room == "214": # 205 has too little data, 214 is empty file, 346 and 349 have no classes
+            if room == "205" or room == "214" or room == "149": # 205 has too little data, 214 is empty file, 346 and 349 have no classes
                 continue
             if room not in compared:
                 compared[room] = {}
+                averages[room] = {}
             for weekday in schedule[room].keys():
                 if weekday not in compared[room]:
                     compared[room][weekday] = {}
-                if weekday != "U": # room 143 has a class on Sunday's, should we try and incorporate Sunday's or ignore this instance?
+                    averages[room][weekday] = [0 for i in range(288)]
+                if weekday != "U": # room 143 has a class on Sunday's, should we try and incorporate Sunday's or ignore this instance
+                    total_weekdays = len(occ[room][weekday].keys())
                     for date in occ[room][weekday].keys():
                         if date not in compared[room][weekday]:
                             compared[room][weekday][date] = [0 for i in range(288)]
                         for i in range(288):
+                            averages[room][weekday][i] += occ[room][weekday][date][i]
                             if schedule[room][weekday][i] == 0 and occ[room][weekday][date][i] == 1:
                                 compared[room][weekday][date][i] = 1
-
-    print(compared)
+                    
+                    for i in range(288):
+                        averages[room][weekday][i] = averages[room][weekday][i]/total_weekdays
+                        
+    print(averages)
 
 def main():
     schedule = parse_schedule()
