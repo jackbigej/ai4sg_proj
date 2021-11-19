@@ -4,6 +4,7 @@ import datetime
 import sys
 import csv
 import os
+import json
 
 def parse_schedule():
     with open('FallClassSchedule.csv', 'r') as f:
@@ -195,11 +196,20 @@ def compare(schedule, occ):
                         averages[room][weekday][i] = averages[room][weekday][i]/total_weekdays
                         
     print(averages)
+    return [compared, averages]
 
 def main():
     schedule = parse_schedule()
+    with open("schedule.json", "w+") as f:
+        f.write(json.dumps(schedule))
     occ = parse_occupancy()
-    compare(schedule, occ)
+    with open("occ.json", "w+") as f:
+        f.write(json.dumps(occ))
+    [compared, averages] = compare(schedule, occ)
+    with open("compared.json", "w+") as f:
+        f.write(json.dumps(compared))
+    with open("averages.json", "w+") as f:
+        f.write(json.dumps(averages))
 
 if __name__ == '__main__':
     main()
