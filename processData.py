@@ -235,6 +235,10 @@ def main():
     p = percentages(compared)
     with open("percentages.json", "w+") as f:
         f.write(json.dumps(p))
+    with open("143_averages.json", "w+") as f:
+        f.write(json.dumps(averages['143']))
+    with open("143_schedule.json", "w+") as f:
+        f.write(json.dumps(schedule['143']))
 
 if __name__ == '__main__':
     main()
