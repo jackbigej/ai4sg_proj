@@ -195,8 +195,30 @@ def compare(schedule, occ):
                     for i in range(288):
                         averages[room][weekday][i] = averages[room][weekday][i]/total_weekdays
                         
-    print(averages)
     return [compared, averages]
+
+def percentages(compared):
+    percentages = {}
+    
+    with open("LightRoomKey.csv") as f:
+        csvreader = csv.reader(f)
+        for row in csvreader:
+            room = row[1]
+            sum = 0
+            dateCount = 0
+            if room == "205" or room == "214" or room == "149": # 205 has too little data, 214 is empty file, 346 and 349 have no classes
+                continue
+            if room not in percentages:
+                percentages[room] = 0
+            for weekday in compared[room].keys():
+                if weekday != "U": # room 143 has a class on Sunday's, should we try and incorporate Sunday's or ignore this instance
+                    for date in compared[room][weekday].keys():
+                        for i in range(288):
+                            sum += compared[room][weekday][date][i]
+                            dateCount += 1
+                    
+            percentages[room] = sum / dateCount
+    return percentages
 
 def main():
     schedule = parse_schedule()
@@ -210,6 +232,9 @@ def main():
         f.write(json.dumps(compared))
     with open("averages.json", "w+") as f:
         f.write(json.dumps(averages))
+    p = percentages(compared)
+    with open("percentages.json", "w+") as f:
+        f.write(json.dumps(p))
 
 if __name__ == '__main__':
     main()
